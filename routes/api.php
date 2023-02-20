@@ -29,8 +29,19 @@ Route::group([
 
 Route::post('/callback', [KmtController::class, 'callback']);
 Route::get('/publickey', function(){
-    return jPublicKey();
+    return env('PUBLIC_KEY', false);
+});
+Route::get('/billerid', function(){
+    return env('BILLER_ID', false);
+});
+Route::get('/bizmchid', function(){
+    return env('BIZMCH_ID', false);
+});
+Route::get('/channal', function(){
+    return env('CHANNEL', false);
 });
 Route::get('/uuid', function(){
-    return jUuid();
+    return Str::uuid();
 });
+Route::get('/qrcode', [KmtController::class, 'qrCode']);
+Route::get('/sign', [KmtController::class, 'getSign']);

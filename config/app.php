@@ -176,6 +176,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         // JWT
         Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
+        //Qrcode
+        SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class,
 
     ],
 
@@ -234,6 +236,8 @@ return [
         // JWT
         'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
         'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
+        //QrCode
+        'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
 
     ],
 
