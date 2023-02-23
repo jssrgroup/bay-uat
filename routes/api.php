@@ -5,6 +5,7 @@ use App\Http\Controllers\KmtController;
 use App\Http\Controllers\QrcodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------

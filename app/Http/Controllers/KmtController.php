@@ -2,30 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\BaseController;
+use App\Http\Resources\Callback as CallbackResource;
+use App\Http\Resources\Transection as TransectionResource;
+use App\Http\Resources\TransectionList as TransectionListResource;
+use App\Models\Callback;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
-class KmtController extends Controller
+class KmtController extends BaseController
 {
     public function callback(Request $request)
     {
-        return response()->json(["status" => 200, "data" => [
-            "user" => $request->all()
-        ]]);
+        $input = $request->all();
+
+        $callback = [
+            'trxId' => $input['trxId'],
+            'terminalId' => $input['terminalId'],
+            'data' => json_encode($input)
+        ];
+
+        $cb = Callback::create($callback);
+
+        $data = [
+            'message' => 'Successful reception',
+            'returnCode' => 10000,
+
+        ];
+        $stringA = '';
+        foreach ($data as $key => $value) {
+            $stringA .= "$key=$value&";
+        }
+
+        $stringA = substr($stringA, 0, -1);
+        $stringB = hash("sha256", utf8_encode($stringA));
+        openssl_public_encrypt($stringB, $encrypted_message, env('PUBLIC_KEY', false), OPENSSL_PKCS1_PADDING);
+        $data['sign'] = base64_encode($encrypted_message);
+
+        return response()->json($data);
     }
     public function qrCode(Request $request)
     {
-        // QR code with text
-        // $qrcode = QrCode::size(200)->format('png')->generate('Welcome to Makitweb', public_path('images/qrcode.svg') );
-        // $qrcode = base64_encode(QrCode::size(200)->format('png')->generate('Welcome to Makitweb'));
-        // return response()->json(["status" => 200, "data" => [
-        //     "qrcode" => $qrcode
-        // ]]);
         $validator = Validator::make($request->all(), [
             'amount' => 'required|string',
-            'reference1' => 'required|string|min:6',
-            'reference2' => 'required|string|min:6',
+            'reference1' => 'required|string',
+            'reference2' => 'required|string',
             'remark' => 'required|string',
             'terminalId' => 'required|string',
         ]);
@@ -53,17 +76,16 @@ class KmtController extends Controller
         openssl_public_encrypt($stringB, $encrypted_message, env('PUBLIC_KEY', false), OPENSSL_PKCS1_PADDING);
         $data['sign'] = base64_encode($encrypted_message);
 
-        // return response()->json(["status" => 200, "data" => [
-        //     "stringA" => $stringA,
-        //     "stringB" => $stringB,
-        //     "sign" => base64_encode($encrypted_message),
-        //     "payload" => $data,
-        // ]]);
-
         $curl = curl_init();
 
+        $header = array(
+            'API-Key: ' . env('API_KEY', false),
+            'X-Client-Transaction-ID: ' . Str::uuid(),
+            'Content-Type: application/json',
+        );
+
         curl_setopt_array($curl, array(
-            CURLOPT_URL => "https://payment.jssr.co.th/KrungsriAPI/apix/qrcode.php",
+            CURLOPT_URL => env('BAY_URL', false) . 'trans/precreate',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -71,12 +93,7 @@ class KmtController extends Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => array(
-                // Set here requred headers
-                "accept: */*",
-                "accept-language: en-US,en;q=0.8",
-                "content-type: application/json",
-            ),
+            CURLOPT_HTTPHEADER => $header,
         ));
 
         $response = curl_exec($curl);
@@ -88,11 +105,11 @@ class KmtController extends Controller
             return response()->json($err, 422);
         } else {
             $data = json_decode($response, true);
-            return response()->json(array(
-                'trxId'=>$data['trxId'],
-                'qrcodeContent'=>$data['qrcodeContent'],
-                'qrcode'=>base64_encode(QrCode::size(200)->format('png')->generate($data['qrcodeContent'])),
-            ), 200);
+            return $this->sendResponse(array(
+                'trxId' => $data['trxId'],
+                'qrcodeContent' => $data['qrcodeContent'],
+                'qrcode' => base64_encode(QrCode::size(200)->format('png')->generate($data['qrcodeContent'])),
+            ), 'Retrived qrcode successfully.');
         }
     }
 
@@ -119,18 +136,16 @@ class KmtController extends Controller
         openssl_public_encrypt($stringB, $encrypted_message, env('PUBLIC_KEY', false), OPENSSL_PKCS1_PADDING);
         $data['sign'] = base64_encode($encrypted_message);
 
-        // return response()->json(["status" => 200, "data" => [
-        //     "stringA" => $stringA,
-        //     "stringB" => $stringB,
-        //     "sign" => base64_encode($encrypted_message),
-        //     "payload" => $data,
-        // ]]);
-        // exit;
-
         $curl = curl_init();
 
+        $header = array(
+            'API-Key: ' . env('API_KEY', false),
+            'X-Client-Transaction-ID: ' . Str::uuid(),
+            'Content-Type: application/json',
+        );
+
         curl_setopt_array($curl, array(
-            CURLOPT_URL => "https://payment.jssr.co.th/KrungsriAPI/apix/transection.php",
+            CURLOPT_URL => env('BAY_URL', false) . 'trans/detail',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -138,12 +153,7 @@ class KmtController extends Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => array(
-                // Set here requred headers
-                "accept: */*",
-                "accept-language: en-US,en;q=0.8",
-                "content-type: application/json",
-            ),
+            CURLOPT_HTTPHEADER => $header,
         ));
 
         $response = curl_exec($curl);
@@ -154,10 +164,11 @@ class KmtController extends Controller
         if ($err) {
             return response()->json($err, 422);
         } else {
-            $data = json_decode($response, true);
-            return response()->json($data, 200);
+            $data = json_decode($response);
+            return $this->sendResponse(new TransectionResource($data->transaction), 'Transection retrived successfully.');
         }
     }
+
     public function transectionList(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -186,18 +197,17 @@ class KmtController extends Controller
         openssl_public_encrypt($stringB, $encrypted_message, env('PUBLIC_KEY', false), OPENSSL_PKCS1_PADDING);
         $data['sign'] = base64_encode($encrypted_message);
 
-        // return response()->json(["status" => 200, "data" => [
-        //     "stringA" => $stringA,
-        //     "stringB" => $stringB,
-        //     "sign" => base64_encode($encrypted_message),
-        //     "payload" => $data,
-        // ]]);
-        // exit;
-
         $curl = curl_init();
 
+
+        $header = array(
+            'API-Key: ' . env('API_KEY', false),
+            'X-Client-Transaction-ID: ' . Str::uuid(),
+            'Content-Type: application/json',
+        );
+
         curl_setopt_array($curl, array(
-            CURLOPT_URL => "https://payment.jssr.co.th/KrungsriAPI/apix/transectionList.php",
+            CURLOPT_URL => env('BAY_URL', false) . 'trans/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -205,12 +215,7 @@ class KmtController extends Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => array(
-                // Set here requred headers
-                "accept: */*",
-                "accept-language: en-US,en;q=0.8",
-                "content-type: application/json",
-            ),
+            CURLOPT_HTTPHEADER => $header,
         ));
 
         $response = curl_exec($curl);
@@ -221,8 +226,8 @@ class KmtController extends Controller
         if ($err) {
             return response()->json($err, 422);
         } else {
-            $data = json_decode($response, true);
-            return response()->json($data, 200);
+            $data = json_decode($response);
+            return $this->sendResponse(TransectionResource::collection($data->data->transactions), 'Transection list retrived successfully.');
         }
     }
     public function getSign(Request $request)
