@@ -113,9 +113,10 @@ class KmtController extends BaseController
         }
     }
 
-    public function transection(Request $request)
+    public function transection(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
+        $input['trxId'] = $id;
+        $validator = Validator::make($input, [
             'trxId' => 'required',
         ]);
         if ($validator->fails()) {
@@ -230,6 +231,68 @@ class KmtController extends BaseController
             return $this->sendResponse(TransectionResource::collection($data->data->transactions), 'Transection list retrived successfully.');
         }
     }
+
+    public function settleList(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'numberPerPage' => 'required',
+            'pageNumber' => 'required',
+            'timeStart' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $data = [
+            'bizMchId' => env('BIZMCH_ID', false),
+            'numberPerPage' => $validator->validated()['numberPerPage'],
+            'pageNumber' => $validator->validated()['pageNumber'],
+            'timeStart' => $validator->validated()['timeStart'],
+        ];
+        $stringA = '';
+        foreach ($data as $key => $value) {
+            $stringA .= "$key=$value&";
+        }
+
+        $stringA = substr($stringA, 0, -1);
+        $stringB = hash("sha256", utf8_encode($stringA));
+        openssl_public_encrypt($stringB, $encrypted_message, env('PUBLIC_KEY', false), OPENSSL_PKCS1_PADDING);
+        $data['sign'] = base64_encode($encrypted_message);
+
+        $curl = curl_init();
+
+
+        $header = array(
+            'API-Key: ' . env('API_KEY', false),
+            'X-Client-Transaction-ID: ' . Str::uuid(),
+            'Content-Type: application/json',
+        );
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => env('BAY_URL', false) . 'settle/list',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30000,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => $header,
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            return response()->json($err, 422);
+        } else {
+            $data = json_decode($response);
+            return $this->sendResponse($data, 'Settle list retrived successfully.');
+        }
+    }
+
     public function getSign(Request $request)
     {
         $data = $request->data;

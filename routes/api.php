@@ -46,8 +46,9 @@ Route::get('/uuid', function(){
     return Str::uuid();
 });
 Route::get('/qrcode', [KmtController::class, 'qrCode']);
-Route::get('/transection', [KmtController::class, 'transection']);
-Route::get('/transectionlist', [KmtController::class, 'transectionList']);
+Route::get('/transection/{id}', [KmtController::class, 'transection']);
+Route::get('/transection', [KmtController::class, 'transectionList']);
+Route::get('/settle', [KmtController::class, 'settleList']);
 
 Route::get('/sign', [KmtController::class, 'getSign']);
 
