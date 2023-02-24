@@ -58,7 +58,7 @@ class KmtController extends BaseController
             'terminalId' => 'required|string',
         ]);
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return $this->sendError('Validation error.', $validator->errors(),422);
         }
 
         $data = [
@@ -90,7 +90,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://payment.jssr.co.th/KrungsriAPI/apix/qrcode.php', //env('BAY_URL', false) . 'trans/precreate',
+            CURLOPT_URL => env('BAY_URL', false) . 'trans/precreate', //'https://payment.jssr.co.th/KrungsriAPI/apix/qrcode.php', //
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -108,32 +108,39 @@ class KmtController extends BaseController
 
         $responseArr = json_decode($response, true);
 
-        $payload = [
-            'header' => $header,
-            'body' => $data,
-        ];
+        // return response()->json($responseArr, 500);
 
-        $log = [
-            'trxId' => $responseArr['trxId'],
-            'payload' => json_encode($payload),
-        ];
-
-        Log::create($log);
-
-        if ($err) {
-            return response()->json($err, 500);
+        if ($err || $response == "File not found.\n") {
+            return $this->sendError($response, 'Curl error.', 500);
         } else {
-            // return response()->json(array($responseArr), 200);
-            $res = [
-                'trxId' => $responseArr['trxId'],
-                'terminalId' => $data['terminalId'],
-                'qrcodeContent' => $responseArr['qrcodeContent'],
-                'qrcode' => $responseArr['qrcodeContent'], //base64_encode(QrCode::size(200)->format('png')->generate($responseArr['qrcodeContent'])),
-            ];
+            if (isset($responseArr['returnCode'])) {
+                if ($responseArr['returnCode'] == '10000') {
+                    $payload = [
+                        'header' => $header,
+                        'body' => $data,
+                    ];
+                    $log = [
+                        'trxId' => $responseArr['trxId'],
+                        'payload' => json_encode($payload),
+                    ];
+                    Log::create($log);
 
-            Qrcode::create($res);
+                    $res = [
+                        'trxId' => $responseArr['trxId'],
+                        'terminalId' => $data['terminalId'],
+                        'qrcodeContent' => $responseArr['qrcodeContent'], //$responseArr['qrcodeContent'], //
+                        'qrcode' => base64_encode(QrCode::size(200)->format('png')->generate($responseArr['qrcodeContent'])),
+                    ];
 
-            return $this->sendResponse($res, 'Retrived qrcode successfully.');
+                    Qrcode::create($res);
+
+                    return $this->sendResponse($res, $responseArr['message']);
+                } else {
+                    return $this->sendError($responseArr['message'], $responseArr, 500);
+                }
+            } else {
+                return $this->sendError('response error', $responseArr, 500);
+            }
         }
     }
 
