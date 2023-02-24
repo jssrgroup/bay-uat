@@ -7,6 +7,7 @@ use App\Http\Resources\Callback as CallbackResource;
 use App\Http\Resources\Transection as TransectionResource;
 use App\Http\Resources\TransectionList as TransectionListResource;
 use App\Models\Callback;
+use App\firebaseRDB;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 
 class KmtController extends BaseController
 {
+
     public function callback(Request $request)
     {
         $input = $request->all();
@@ -23,6 +25,9 @@ class KmtController extends BaseController
             'terminalId' => $input['terminalId'],
             'data' => json_encode($input)
         ];
+        
+        $db = new firebaseRDB(env('FIREBASE_DATABASE_URL', false));
+        $insert = $db->insert("callback/{$callback['terminalId']}", $callback);
 
         $cb = Callback::create($callback);
 
@@ -269,7 +274,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'settle/list',
+            CURLOPT_URL => env('BAY_URL', false) . 'trans/settle/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
