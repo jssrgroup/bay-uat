@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Api\BaseController;
-use App\Http\Resources\Callback as CallbackResource;
 use App\Http\Resources\Transection as TransectionResource;
-use App\Http\Resources\TransectionList as TransectionListResource;
 use App\Models\Callback;
 use App\firebaseRDB;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Validator;
@@ -25,7 +24,7 @@ class KmtController extends BaseController
             'terminalId' => $input['terminalId'],
             'data' => json_encode($input)
         ];
-        
+
         $db = new firebaseRDB(env('FIREBASE_DATABASE_URL', false));
         $insert = $db->insert("callback/{$callback['terminalId']}", $callback);
 
@@ -48,6 +47,7 @@ class KmtController extends BaseController
 
         return response()->json($data);
     }
+
     public function qrCode(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -90,7 +90,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'trans/precreate',
+            CURLOPT_URL => 'https://payment.jssr.co.th/KrungsriAPI/apix/qrcode.php', //env('BAY_URL', false) . 'trans/precreate',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -106,14 +106,29 @@ class KmtController extends BaseController
 
         curl_close($curl);
 
+        $responseArr = json_decode($response, true);
+
+        $payload = [
+            'header' => $header,
+            'body' => $data,
+        ];
+
+        $log = [
+            'trxId' => $responseArr['trxId'],
+            'payload' => json_encode($payload),
+        ];
+
+        Log::create($log);
+
         if ($err) {
-            return response()->json($err, 422);
+            return response()->json($err, 500);
         } else {
-            $data = json_decode($response, true);
+            // return response()->json(array($responseArr), 200);
             return $this->sendResponse(array(
-                'trxId' => $data['trxId'],
-                'qrcodeContent' => $data['qrcodeContent'],
-                'qrcode' => base64_encode(QrCode::size(200)->format('png')->generate($data['qrcodeContent'])),
+                'trxId' => $responseArr['trxId'],
+                'terminalId' => $data['terminalId'],
+                'qrcodeContent' => $responseArr['qrcodeContent'],
+                'qrcode' => base64_encode(QrCode::size(200)->format('png')->generate($responseArr['qrcodeContent'])),
             ), 'Retrived qrcode successfully.');
         }
     }
