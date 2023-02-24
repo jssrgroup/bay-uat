@@ -7,8 +7,8 @@ use App\Http\Resources\Transection as TransectionResource;
 use App\Models\Callback;
 use App\firebaseRDB;
 use App\Models\Log;
+use App\Models\Qrcode;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -124,12 +124,16 @@ class KmtController extends BaseController
             return response()->json($err, 500);
         } else {
             // return response()->json(array($responseArr), 200);
-            return $this->sendResponse(array(
+            $res = [
                 'trxId' => $responseArr['trxId'],
                 'terminalId' => $data['terminalId'],
                 'qrcodeContent' => $responseArr['qrcodeContent'],
-                'qrcode' => base64_encode(QrCode::size(200)->format('png')->generate($responseArr['qrcodeContent'])),
-            ), 'Retrived qrcode successfully.');
+                'qrcode' => $responseArr['qrcodeContent'], //base64_encode(QrCode::size(200)->format('png')->generate($responseArr['qrcodeContent'])),
+            ];
+
+            Qrcode::create($res);
+
+            return $this->sendResponse($res, 'Retrived qrcode successfully.');
         }
     }
 
