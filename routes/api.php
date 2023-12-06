@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KmtController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QrcodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -26,23 +27,23 @@ Route::group([
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
-    Route::get('/user-profile', [AuthController::class, 'userProfile']);    
+    Route::get('/user-profile', [AuthController::class, 'userProfile']);
 });
 
 Route::post('/callback', [KmtController::class, 'callback']);
-Route::get('/publickey', function(){
+Route::get('/publickey', function () {
     return env('PUBLIC_KEY', false);
 });
-Route::get('/billerid', function(){
+Route::get('/billerid', function () {
     return env('BILLER_ID', false);
 });
-Route::get('/bizmchid', function(){
+Route::get('/bizmchid', function () {
     return env('BIZMCH_ID', false);
 });
-Route::get('/channal', function(){
+Route::get('/channal', function () {
     return env('CHANNEL', false);
 });
-Route::get('/uuid', function(){
+Route::get('/uuid', function () {
     return Str::uuid();
 });
 Route::get('/qrcode', [KmtController::class, 'qrCode']);
@@ -55,11 +56,22 @@ Route::get('/sign', [KmtController::class, 'getSign']);
 Route::get('/header', [KmtController::class, 'header']);
 
 // Route::middleware('api')->group( function () {
-    Route::resource('qrcodes', QrcodeController::class);
+Route::resource('qrcodes', QrcodeController::class);
 // });
 
 Route::group([
     'middleware' => 'apikey',
 ], function ($router) {
     $router->get('/sign', [KmtController::class, 'getSign']);
+});
+
+Route::group([
+    'prefix' => 'v2',
+], function ($router) {
+
+    Route::group([
+        'prefix' => 'payment'
+    ], function ($router) {
+        Route::get('/token', [PaymentController::class, 'getToken']);
+    });
 });

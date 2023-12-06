@@ -199,7 +199,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'trans/detail',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/detail',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -261,7 +261,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'trans/list',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -322,7 +322,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'trans/settle/list',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/settle/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -346,7 +346,7 @@ class KmtController extends BaseController
         }
     }
 
-    
+
     public function verify(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -380,7 +380,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . 'trans/verify',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/verify',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
