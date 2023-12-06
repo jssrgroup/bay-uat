@@ -49,9 +49,17 @@ Route::get('/qrcode', [KmtController::class, 'qrCode']);
 Route::get('/transection/{id}', [KmtController::class, 'transection']);
 Route::get('/transection', [KmtController::class, 'transectionList']);
 Route::get('/settle', [KmtController::class, 'settleList']);
+Route::get('/verify', [KmtController::class, 'verify']);
 
 Route::get('/sign', [KmtController::class, 'getSign']);
+Route::get('/header', [KmtController::class, 'header']);
 
 // Route::middleware('api')->group( function () {
     Route::resource('qrcodes', QrcodeController::class);
 // });
+
+Route::group([
+    'middleware' => 'apikey',
+], function ($router) {
+    $router->get('/sign', [KmtController::class, 'getSign']);
+});
