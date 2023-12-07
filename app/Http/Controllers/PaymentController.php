@@ -129,6 +129,69 @@ class PaymentController extends BaseController
         }
     }
 
+    public function confirmation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'transactionInitiationNumber' => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $data = array(
+            "transactionInitiationNumber" => $validator->validated()['transactionInitiationNumber'],
+        );
+
+        $token = $this->getToken()->original->access_token;
+        $signatureKey = env('SIGNATURE_KEY', false);
+
+        $url = '/rest/api/v1/accounts/deposits/fundTransfer/confirmation';
+        $uuid = Str::uuid();
+        $datetime = $this->getDateTime();
+        $timestamp = $datetime['timestamp'];
+        $digest = base64_encode(hash("sha256", json_encode($data), TRUE));
+        $signatureValue = "(request-target): post $url\n(created): $timestamp\ndigest: SHA-256=$digest\nx-client-transaction-id: $uuid";
+        $signature = base64_encode(hash_hmac("sha256", $signatureValue, $signatureKey, TRUE));
+        $Signature = 'keyId="client-secret",algorithm="hs2019",created=' . $timestamp . ',headers="(request-target) (created) digest x-client-transaction-id",signature="' . $signature . '"';
+
+        $header = array(
+            'X-Client-Transaction-ID: ' . $uuid,
+            'Authorization: Bearer ' . $token,
+            'Signature: ' . $Signature,
+            'Digest: SHA-256=' . $digest,
+            'Content-Type: application/json',
+            'Date: ' . $datetime['datetime'],
+            'Content-Length: ' . strlen(json_encode($data)),
+        );
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => env('BAY_URL', false) . $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => $header,
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            return response()->json($err, 422);
+        } else {
+            $data = json_decode($response);
+            return response()->json($data, 200);
+        }
+    }
+
 
     function getDateTime()
     {

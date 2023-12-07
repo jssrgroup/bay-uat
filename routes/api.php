@@ -74,5 +74,6 @@ Route::group([
     ], function ($router) {
         Route::get('/token', [PaymentController::class, 'getToken']);
         Route::post('/initiation', [PaymentController::class, 'initiation']);
+        Route::post('/confirmation', [PaymentController::class, 'confirmation']);
     });
 });
