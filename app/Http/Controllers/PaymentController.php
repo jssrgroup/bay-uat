@@ -51,8 +51,6 @@ class PaymentController extends BaseController
         }
     }
 
-
-
     public function initiation(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -65,7 +63,7 @@ class PaymentController extends BaseController
             return response()->json($validator->errors(), 422);
         }
 
-        $data = [
+        $data = array(
             "amountDirectionCode" => "DBCR",
             "transactionCode" => ($validator->validated()['bankCode'] == "025") ? "DIRECT_CREDIT" : "SMART_CREDIT",
             "annotation" => $request['remark'],
@@ -79,27 +77,18 @@ class PaymentController extends BaseController
             "transaction" => [
                 "amount" => $validator->validated()['amount']
             ],
-            // "uuid" => Str::uuid(),
-            // "datetime" => $this->getDateTime()['timestamp'],
-            // "token" => $this->getToken()->original->access_token,
-            // "signatureKey" => env('API_SECRET', false),
-        ];
-        // 'bizMchId' => env('BIZMCH_ID', false),
-        // return response()->json($data, 200);
+        );
 
         $token = $this->getToken()->original->access_token;
-        $signatureKey = env('API_SECRET', false);
+        $signatureKey = env('SIGNATURE_KEY', fa);
 
         $url = '/rest/api/v1/accounts/deposits/fundTransfer/initiation';
         $uuid = Str::uuid();
         $datetime = $this->getDateTime();
         $timestamp = $datetime['timestamp'];
         $digest = base64_encode(hash("sha256", json_encode($data), TRUE));
-
         $signatureValue = "(request-target): post $url\n(created): $timestamp\ndigest: SHA-256=$digest\nx-client-transaction-id: $uuid";
-        // echo $signatureValue, '<br/>';
         $signature = base64_encode(hash_hmac("sha256", $signatureValue, $signatureKey, TRUE));
-
         $Signature = 'keyId="client-secret",algorithm="hs2019",created=' . $timestamp . ',headers="(request-target) (created) digest x-client-transaction-id",signature="' . $signature . '"';
 
         $header = array(
@@ -111,8 +100,6 @@ class PaymentController extends BaseController
             'Date: ' . $datetime['datetime'],
             'Content-Length: ' . strlen(json_encode($data)),
         );
-
-        // return response()->json(array($header, $data), 200);
 
         $curl = curl_init();
 
@@ -130,9 +117,16 @@ class PaymentController extends BaseController
         ));
 
         $response = curl_exec($curl);
+        $err = curl_error($curl);
 
         curl_close($curl);
-        return $response;
+
+        if ($err) {
+            return response()->json($err, 422);
+        } else {
+            $data = json_decode($response);
+            return response()->json($data, 200);
+        }
     }
 
 
