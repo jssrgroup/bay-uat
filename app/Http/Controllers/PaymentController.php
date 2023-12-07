@@ -192,6 +192,58 @@ class PaymentController extends BaseController
         }
     }
 
+    public function inquire(Request $request, $transactionInitiationNumber)
+    {
+        $input['transactionInitiationNumber'] = $transactionInitiationNumber;
+        $validator = Validator::make($input, [
+            'transactionInitiationNumber' => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $data = array(
+            "transactionInitiationNumber" => $validator->validated()['transactionInitiationNumber'],
+        );
+
+        $token = $this->getToken()->original->access_token;
+        $signatureKey = env('SIGNATURE_KEY', false);
+
+        $url = "/rest/api/v1/accounts/deposits/fundTransfer/inquiry/{$validator->validated()['transactionInitiationNumber']}";
+        $uuid = Str::uuid();
+
+        $header = array(
+            'X-Client-Transaction-ID: ' . $uuid,
+            'Authorization: Bearer ' . $token,
+        );
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => env('BAY_URL', false) . $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => $header,
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($err) {
+            return response()->json($err, 422);
+        } else {
+            $data = json_decode($response);
+            return response()->json($data, 200);
+        }
+    }
+
 
     function getDateTime()
     {
