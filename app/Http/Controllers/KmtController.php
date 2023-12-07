@@ -111,7 +111,7 @@ class KmtController extends BaseController
             'Content-Type: application/json',
         );
 
-        curl_setopt_array($curl, array(//env('BAY_URL', false) . '/native/QRPayment/trans/precreate', //
+        curl_setopt_array($curl, array(//env('BAY_URL', false) . 'trans/precreate', //
             CURLOPT_URL => 'https://payment.jssr.co.th/KrungsriAPI/apix/qrcode.php', //
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
@@ -199,7 +199,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . '/native/QRPayment/trans/detail',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/detail',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -261,7 +261,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . '/native/QRPayment/trans/list',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -322,7 +322,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . '/native/QRPayment/trans/settle/list',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/settle/list',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -380,7 +380,7 @@ class KmtController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . '/native/QRPayment/trans/verify',
+            CURLOPT_URL => env('BAY_URL', false) . 'native/QRPayment/trans/verify',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,

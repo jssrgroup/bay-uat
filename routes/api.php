@@ -73,6 +73,5 @@ Route::group([
         'prefix' => 'payment'
     ], function ($router) {
         Route::get('/token', [PaymentController::class, 'getToken']);
-        Route::post('/initiation', [PaymentController::class, 'initiation']);
     });
 });

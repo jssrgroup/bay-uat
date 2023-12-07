@@ -3,15 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Api\BaseController;
-use DateTime;
-use DateTimeZone;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class PaymentController extends BaseController
 {
-
     public function getToken()
     {
 
@@ -26,7 +21,7 @@ class PaymentController extends BaseController
         );
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . '/auth/oauth/v2/token',
+            CURLOPT_URL => env('BAY_URL', false) . 'auth/oauth/v2/token',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -49,99 +44,5 @@ class PaymentController extends BaseController
             $data = json_decode($response);
             return response()->json($data, 200);
         }
-    }
-
-
-
-    public function initiation(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'accountTo' => 'required|string',
-            'bankCode' => 'required|string',
-            'amount' => 'required|numeric',
-            // 'remark' => 'string|null',
-        ]);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $data = [
-            "amountDirectionCode" => "DBCR",
-            "transactionCode" => ($validator->validated()['bankCode'] == "025") ? "DIRECT_CREDIT" : "SMART_CREDIT",
-            "annotation" => $request['remark'],
-            "accountFrom" => [
-                "accountNumber" => "7770083525"
-            ],
-            "accountTo" => [
-                "accountNumber" => $validator->validated()['accountTo'],
-                "bankCode" => $validator->validated()['bankCode']
-            ],
-            "transaction" => [
-                "amount" => $validator->validated()['amount']
-            ],
-            // "uuid" => Str::uuid(),
-            // "datetime" => $this->getDateTime()['timestamp'],
-            // "token" => $this->getToken()->original->access_token,
-            // "signatureKey" => env('API_SECRET', false),
-        ];
-        // 'bizMchId' => env('BIZMCH_ID', false),
-        // return response()->json($data, 200);
-
-        $token = $this->getToken()->original->access_token;
-        $signatureKey = env('API_SECRET', false);
-
-        $url = '/rest/api/v1/accounts/deposits/fundTransfer/initiation';
-        $uuid = Str::uuid();
-        $datetime = $this->getDateTime();
-        $timestamp = $datetime['timestamp'];
-        $digest = base64_encode(hash("sha256", json_encode($data), TRUE));
-
-        $signatureValue = "(request-target): post $url\n(created): $timestamp\ndigest: SHA-256=$digest\nx-client-transaction-id: $uuid";
-        // echo $signatureValue, '<br/>';
-        $signature = base64_encode(hash_hmac("sha256", $signatureValue, $signatureKey, TRUE));
-
-        $Signature = 'keyId="client-secret",algorithm="hs2019",created=' . $timestamp . ',headers="(request-target) (created) digest x-client-transaction-id",signature="' . $signature . '"';
-
-        $header = array(
-            'X-Client-Transaction-ID: ' . $uuid,
-            'Authorization: Bearer ' . $token,
-            'Signature: ' . $Signature,
-            'Digest: SHA-256=' . $digest,
-            'Content-Type: application/json',
-            'Date: ' . $datetime['datetime'],
-            'Content-Length: ' . strlen(json_encode($data)),
-        );
-
-        // return response()->json(array($header, $data), 200);
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => env('BAY_URL', false) . $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => $header,
-        ));
-
-        $response = curl_exec($curl);
-
-        curl_close($curl);
-        return $response;
-    }
-
-
-    function getDateTime()
-    {
-        $datetime = new DateTime();
-        $timezone = new DateTimeZone('Asia/Bangkok');
-        $datetime->setTimezone($timezone);
-        $iso8604 = $datetime->format(DateTime::COOKIE);
-        return array('datetime' => $iso8604, 'timestamp' => strtotime($iso8604));
     }
 }
