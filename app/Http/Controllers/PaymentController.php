@@ -208,8 +208,16 @@ class PaymentController extends BaseController
         if ($err) {
             return response()->json($err, 422);
         } else {
-            $data = json_decode($response);
-            return response()->json($data, 200);
+            $json = json_decode($response);
+
+            $payment = Payment::where('transactionInitiationNumber', $validator->validated()['transactionInitiationNumber'])
+            ->update([
+                'transactionTransactionDateTime' => str_replace("T", " ", "2023-12-01T11:31:30"),
+                'status' => 1,
+                'updated_at' => now()
+            ]);
+
+            return response()->json($payment, 200);
         }
     }
 
