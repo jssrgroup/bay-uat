@@ -8,6 +8,7 @@ use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Models\Payment;
 
 class PaymentController extends BaseController
 {
@@ -80,7 +81,7 @@ class PaymentController extends BaseController
         );
 
         $token = $this->getToken()->original->access_token;
-        $signatureKey = env('SIGNATURE_KEY', fa);
+        $signatureKey = env('SIGNATURE_KEY', false);
 
         $url = '/rest/api/v1/accounts/deposits/fundTransfer/initiation';
         $uuid = Str::uuid();
@@ -124,8 +125,28 @@ class PaymentController extends BaseController
         if ($err) {
             return response()->json($err, 422);
         } else {
-            $data = json_decode($response);
-            return response()->json($data, 200);
+            $json = json_decode($response);
+
+            $payment = new Payment();
+            $payment->transactionReferenceNumber = $json->transactionReferenceNumber;
+            $payment->transactionInitiationNumber = $json->transactionInitiationNumber;
+            $payment->amountDirectionCode = $json->amountDirectionCode;
+            $payment->transactionCode = $json->transactionCode;
+            $payment->annotation = $json->annotation;
+            $payment->accountFromAccountNumber = $json->accountFrom->accountNumber;
+            $payment->accountFromBankCode = $json->accountFrom->bankCode;
+            $payment->accountToAccountNumber = $json->accountTo->accountNumber;
+            $payment->accountToBankCode = $json->accountTo->bankCode;
+            $payment->accountToAccountNameTH = isset($json->accountTo->accountNameTH) ? $json->accountTo->accountNameTH : '';
+            $payment->accountToAccountNameEN = isset($json->accountTo->accountNameEN) ? $json->accountTo->accountNameEN : '';
+            $payment->transactionAmount = $json->transaction->amount;
+            $payment->transactionCommunicationFee = $json->transaction->communicationFee;
+            $payment->transactionTransactionFee = $json->transaction->transactionFee;
+            $payment->transactionTransactionDateTime = isset($json->accountTo->transactionDateTime) ? $json->transaction->transactionDateTime : '';
+            $payment->endToEndIdentification = isset($json->accountTo->endToEndIdentification) ? $json->transaction->endToEndIdentification : '';
+            $payment->status = 0;
+            $payment->save();
+            return response()->json($payment, 200);
         }
     }
 
@@ -243,7 +264,6 @@ class PaymentController extends BaseController
             return response()->json($data, 200);
         }
     }
-
 
     function getDateTime()
     {
