@@ -212,7 +212,7 @@ class PaymentController extends BaseController
 
             $payment = Payment::where('transactionInitiationNumber', $validator->validated()['transactionInitiationNumber'])
             ->update([
-                'transactionTransactionDateTime' => str_replace("T", " ", "2023-12-01T11:31:30"),
+                'transactionTransactionDateTime' => str_replace("T", " ", $json->accountTo->transactionDateTime),
                 'status' => 1,
                 'updated_at' => now()
             ]);
