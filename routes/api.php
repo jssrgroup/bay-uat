@@ -76,5 +76,6 @@ Route::group([
         Route::post('/initiation', [PaymentController::class, 'initiation']);
         Route::post('/confirmation', [PaymentController::class, 'confirmation']);
         Route::get('/inquire/{transactionInitiationNumber}', [PaymentController::class, 'inquire']);
+        Route::get('/', [PaymentController::class, 'paymentList']);
     });
 });

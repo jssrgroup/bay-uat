@@ -210,14 +210,14 @@ class PaymentController extends BaseController
         } else {
             $json = json_decode($response);
 
-            $payment = Payment::where('transactionInitiationNumber', $validator->validated()['transactionInitiationNumber'])
+            Payment::where('transactionInitiationNumber', $validator->validated()['transactionInitiationNumber'])
             ->update([
-                'transactionTransactionDateTime' => str_replace("T", " ", $json->accountTo->transactionDateTime),
+                'transactionTransactionDateTime' => str_replace("T", " ", $json->transaction->transactionDateTime),
                 'status' => 1,
                 'updated_at' => now()
             ]);
 
-            return response()->json($payment, 200);
+            return response()->json($json, 200);
         }
     }
 
