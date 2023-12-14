@@ -142,7 +142,7 @@ class PaymentController extends BaseController
             $payment->transactionAmount = $json->transaction->amount;
             $payment->transactionCommunicationFee = $json->transaction->communicationFee;
             $payment->transactionTransactionFee = $json->transaction->transactionFee;
-            $payment->transactionTransactionDateTime = isset($json->accountTo->transactionDateTime) ? $json->transaction->transactionDateTime : '';
+            // $payment->transactionTransactionDateTime = isset($json->accountTo->transactionDateTime) ? $json->transaction->transactionDateTime : '0000-00-00 00:00:00';
             $payment->endToEndIdentification = isset($json->accountTo->endToEndIdentification) ? $json->transaction->endToEndIdentification : '';
             $payment->status = 0;
             $payment->save();
