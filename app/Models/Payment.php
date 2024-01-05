@@ -27,6 +27,7 @@ class Payment extends Model
         'transactionTransactionDateTime',
         'endToEndIdentification',
         'status',
-        'data'
+        'data',
+        'fileName'
     ];
 }
